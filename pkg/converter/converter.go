@@ -50,6 +50,66 @@ func New() *Converter {
 	}
 }
 
+
+
+
+
+// ConvertBytes converts audio bytes in memory
+func (c *Converter) ConvertBytes(
+	data []byte,
+	inputFmt Format,
+	outputFmt Format,
+) ([]byte, error) {
+
+	var pcm *PCMData
+	var err error
+
+	r := bytes.NewReader(data)
+
+	switch inputFmt {
+	case FormatWAV:
+		pcm, err = decodeWAV(r)
+	case FormatMP3:
+		pcm, err = decodeMP3(r)
+	case FormatFLAC:
+		pcm, err = decodeFLAC(r)
+	case FormatOGG:
+		pcm, err = decodeOGG(r)
+	default:
+		return nil, fmt.Errorf("unsupported input format: %s", inputFmt)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("decode: %w", err)
+	}
+
+	var out bytes.Buffer
+
+	switch outputFmt {
+	case FormatWAV:
+		err = encodeWAV(&out, pcm)
+	case FormatMP3:
+		err = encodeMP3(&out, pcm)
+	case FormatFLAC:
+		err = encodeFLAC(&out, pcm)
+	case FormatOGG:
+		err = c.encodeOGG(&out, pcm)
+	default:
+		return nil, fmt.Errorf("unsupported output format: %s", outputFmt)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("encode: %w", err)
+	}
+
+	return out.Bytes(), nil
+}
+
+
+
+
+
+
 // ConvertFile converts audio file
 func (c *Converter) ConvertFile(inputPath, outputPath string) error {
 	inputFmt := DetectFormat(inputPath)
