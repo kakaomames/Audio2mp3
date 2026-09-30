@@ -22,8 +22,17 @@ jobs:
       - name: Build WASM
         run: |
           mkdir -p dist
+
           GOOS=js GOARCH=wasm \
           go build -v -o dist/audioconv.wasm ./cmd/audioconv
+
+      - name: Copy wasm_exec.js
+        run: |
+          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/
+
+      - name: Show artifacts
+        run: |
+          ls -lah dist
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
