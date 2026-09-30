@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Audio2mp3</title>
+</head>
+<body>
+  <h1>Audio2mp3</h1>
+
+  <script src="wasm_exec.js"></script>
+
+  <script>
+    const go = new Go();
+
+    async function boot() {
+      const result = await WebAssembly.instantiateStreaming(
+        fetch("audioconv.wasm"),
+        go.importObject
+      );
+
+      console.log("wasm loaded");
+
+      await go.run(result.instance);
+
+      console.log("go finished");
+    }
+
+    boot();
+  </script>
+</body>
+</html>
