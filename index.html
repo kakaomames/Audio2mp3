@@ -10,6 +10,28 @@
   <script src="wasm_exec.js"></script>
 
   <script>
+    const file = document.querySelector("#file").files[0];
+
+const bytes =
+  new Uint8Array(await file.arrayBuffer());
+
+const result = convertAudio(
+  bytes,
+  "wav","ogg","m4a?"
+  "mp3"
+);
+
+const blob = new Blob(
+  [result],
+  { type: "audio/mpeg" }
+);
+
+const url = URL.createObjectURL(blob);
+
+const a = document.createElement("a");
+a.href = url;
+a.download = "output.mp3";
+a.click();
     const go = new Go();
 
     async function boot() {
