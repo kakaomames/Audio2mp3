@@ -14,6 +14,12 @@ import (
 const version = "0.3.0"
 
 func main() {
+
+	if runtime.GOOS == "js" {
+		wasmMain()
+		return
+	}
+
 	if len(os.Args) < 2 {
 		printUsage()
 		os.Exit(1)
