@@ -1,0 +1,32 @@
+name: wasm-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Build WASM
+        run: |
+          mkdir -p dist
+          GOOS=js GOARCH=wasm \
+          go build -v -o dist/audioconv.wasm ./cmd/audioconv
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm
+          path: dist/
