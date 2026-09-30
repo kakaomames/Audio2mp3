@@ -1,12 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"time"
+    "fmt"
+    "os"
+    "runtime"
+    "time"
 
-	"github.com/formeo/go-audio-converter/pkg/converter"
+    "github.com/formeo/go-audio-converter/pkg/converter"
 )
+
+
 
 const version = "0.3.0"
 
