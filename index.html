@@ -1,53 +1,227 @@
 <!doctype html>
-<html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <title>Audio2mp3</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audio Converter</title>
+
+<style>
+body{
+  font-family:sans-serif;
+  max-width:800px;
+  margin:40px auto;
+  padding:0 20px;
+}
+
+button{
+  padding:10px 20px;
+  cursor:pointer;
+}
+
+select,input{
+  margin:10px 0;
+}
+
+#log{
+  margin-top:20px;
+  padding:10px;
+  background:#f5f5f5;
+  white-space:pre-wrap;
+}
+</style>
 </head>
+
 <body>
-  <h1>Audio2mp3</h1>
 
-  <script src="wasm_exec.js"></script>
+<h1>Audio Converter</h1>
 
-  <script>
-    const file = document.querySelector("#file").files[0];
+<p>
+対応: wav / mp3 / flac / ogg
+</p>
 
-const bytes =
-  new Uint8Array(await file.arrayBuffer());
+<input id="file" type="file">
 
-const result = convertAudio(
-  bytes,
-  "wav","ogg","m4a?"
-  "mp3"
-);
+<br>
 
-const blob = new Blob(
-  [result],
-  { type: "audio/mpeg" }
-);
+<label>
+出力形式:
+<select id="target">
+  <option value="mp3">mp3</option>
+  <option value="wav">wav</option>
+  <option value="flac">flac</option>
+</select>
+</label>
 
-const url = URL.createObjectURL(blob);
+<br>
 
-const a = document.createElement("a");
-a.href = url;
-a.download = "output.mp3";
-a.click();
+<button id="convertBtn" disabled>
+変換
+</button>
+
+<div id="log"></div>
+
+wasm_exec.jsscript>
+
+<script>
+
+const log = (...msg) => {
+  console.log(...msg);
+
+  const el = document.getElementById("log");
+  el.textContent += msg.join(" ") + "\n";
+};
+
+function getExtension(filename) {
+  const parts = filename.split(".");
+  if (parts.length < 2) return "";
+  return parts.pop().toLowerCase();
+}
+
+async function loadWasm() {
+
+  try {
+
     const go = new Go();
 
-    async function boot() {
-      const result = await WebAssembly.instantiateStreaming(
+    const result =
+      await WebAssembly.instantiateStreaming(
         fetch("audioconv.wasm"),
         go.importObject
       );
 
-      console.log("wasm loaded");
+    log("wasm loaded");
 
-      await go.run(result.instance);
+    go.run(result.instance);
 
-      console.log("go finished");
+    if (typeof convertAudio !== "function") {
+      throw new Error(
+        "convertAudio() が登録されていません"
+      );
     }
 
-    boot();
-  </script>
+    log("convertAudio ready");
+
+    document
+      .getElementById("convertBtn")
+      .disabled = false;
+
+  } catch (err) {
+
+    console.error(err);
+
+    log(
+      "WASMロード失敗:",
+      err.message || err
+    );
+  }
+}
+
+document
+  .getElementById("convertBtn")
+  .addEventListener("click", async () => {
+
+    try {
+
+      const file =
+        document.getElementById("file")
+        .files[0];
+
+      if (!file) {
+        throw new Error(
+          "ファイルを選択してください"
+        );
+      }
+
+      const inputFormat =
+        getExtension(file.name);
+
+      const outputFormat =
+        document.getElementById("target")
+        .value;
+
+      if (
+        ![
+          "wav",
+          "mp3",
+          "flac",
+          "ogg"
+        ].includes(inputFormat)
+      ) {
+
+        throw new Error(
+          "入力形式を判定できません: "
+          + inputFormat
+        );
+      }
+
+      log(
+        "input:",
+        inputFormat,
+        "output:",
+        outputFormat
+      );
+
+      const bytes =
+        new Uint8Array(
+          await file.arrayBuffer()
+        );
+
+      log(
+        "reading:",
+        bytes.length,
+        "bytes"
+      );
+
+      const result =
+        convertAudio(
+          bytes,
+          inputFormat,
+          outputFormat
+        );
+
+      if (typeof result === "string") {
+        throw new Error(result);
+      }
+
+      const blob =
+        new Blob([result]);
+
+      const url =
+        URL.createObjectURL(blob);
+
+      const a =
+        document.createElement("a");
+
+      a.href = url;
+
+      a.download =
+        file.name.replace(
+          /\.[^.]+$/,
+          ""
+        )
+        + "."
+        + outputFormat;
+
+      a.click();
+
+      URL.revokeObjectURL(url);
+
+      log("done");
+
+    } catch (err) {
+
+      console.error(err);
+
+      log(
+        "ERROR:",
+        err.message || err
+      );
+    }
+  });
+
+loadWasm();
+
+</script>
+
 </body>
 </html>
